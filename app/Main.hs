@@ -13,8 +13,12 @@ main = do
     -- Uncomment this block to pass first stage
     let host = "127.0.0.1"
         port = "4221"
+        crlf = "\r\n"
     --
     BLC.putStrLn $ "Listening on " <> BLC.pack host <> ":" <> BLC.pack port
     --
-    serve (Host host) port $ \(serverSocket, serverAddr) ->
+    serve (Host host) port $ \(serverSocket, serverAddr) -> do
         BLC.putStrLn $ "Accepted connection from " <> BLC.pack (show serverAddr) <> "."
+        let status = "HTTP/1.1 200 OK" <> crlf
+        let headers = status <> crlf
+        send serverSocket headers
