@@ -21,4 +21,4 @@ main = do
         BLC.putStrLn $ "Accepted connection from " <> BLC.pack (show serverAddr) <> "."
         let status = "HTTP/1.1 200 OK" <> crlf
         let headers = status <> crlf
-        send serverSocket headers
+        sendLazy serverSocket headers
