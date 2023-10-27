@@ -43,6 +43,7 @@ requestParser = do
   path <- pathParser <* AC.space <?> "Path"
   _ <- A.takeTill AC.isEndOfLine <* AC.endOfLine <?> "HTTP version"
   headers <- A.many' headerParser <?> "Headers"
+  _ <- AC.endOfLine <?> "End of headers"
   body <- A.takeByteString <?> "Request body"
   return $ Request method path headers body
 
