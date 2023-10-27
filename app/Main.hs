@@ -3,6 +3,7 @@
 module Main (main) where
 
 import CLIOptions
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as BSC
 import qualified Data.ByteString.Lazy as BSL
 import Debug.Trace
@@ -44,20 +45,24 @@ handleUserAgent request _ =
     Just userAgent -> makeTextResponse userAgent
 
 handleFile :: FilePath -> EndpointHandler
-handleFile dir _ path =
+handleFile dir request path =
   let filePath = dir </> joinPath (map BSC.unpack path)
    in if ".." `elem` path
         then return $ makeErrorResponse "Invalid path"
         else do
           fileExist <- doesFileExist filePath
-          if fileExist
-            then do
-              fileContent <- BSL.readFile filePath
-              return $ trace ("File found: " <> filePath) $
-                makeOctetStreamResponse fileContent
-            else
-              trace ("File not found: " <> filePath) $
-                return notFoundResponse
+          case requestMethod request of
+            GET -> if fileExist
+                then do
+                  fileContent <- BSL.readFile filePath
+                  return $ makeOctetStreamResponse fileContent
+                else return notFoundResponse
+            POST -> if fileExist
+                then return methodNotAllowedResponse
+                else do
+                  BS.writeFile filePath $ requestBody request
+                  return createdResponse
+            _ -> return methodNotAllowedResponse
 
 getResponse :: CLIOptions -> Maybe BSC.ByteString -> IO Response
 getResponse _ Nothing = return internalErrorResponse

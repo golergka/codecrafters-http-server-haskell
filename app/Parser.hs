@@ -5,9 +5,7 @@ module Parser (parseRequest) where
 import Data.Attoparsec.ByteString as A
 import qualified Data.Attoparsec.ByteString.Char8 as AC
 import qualified Data.ByteString as BS
-import Data.Char (chr)
-import Data.Word (Word8)
-import Types (Header, Path, Request (..))
+import Types (Header, HttpMethod (..), Path, Request (..))
 
 pathParser :: Parser Path
 pathParser = do
@@ -25,17 +23,28 @@ headerParser = do
   value <- A.takeTill AC.isEndOfLine <* AC.endOfLine <?> "Header value and end of line"
   return (key, value)
 
-isSpaceWord8 :: Word8 -> Bool
-isSpaceWord8 = AC.isSpace . chr . fromIntegral
+httpMethodParser :: Parser HttpMethod
+httpMethodParser =
+  choice
+    [ string "GET" >> return GET,
+      string "POST" >> return POST,
+      string "PUT" >> return PUT,
+      string "DELETE" >> return DELETE,
+      string "PATCH" >> return PATCH,
+      string "HEAD" >> return HEAD,
+      string "OPTIONS" >> return OPTIONS,
+      string "TRACE" >> return TRACE,
+      string "CONNECT" >> return CONNECT
+    ]
 
 requestParser :: Parser Request
 requestParser = do
-  method <- A.takeTill isSpaceWord8 <* AC.space <?> "HTTP method"
+  method <- httpMethodParser <* AC.space <?> "HTTP method"
   path <- pathParser <* AC.space <?> "Path"
   _ <- A.takeTill AC.isEndOfLine <* AC.endOfLine <?> "HTTP version"
   headers <- A.many' headerParser <?> "Headers"
-  -- TODO parse request body
-  return $ Request method path headers ""
+  body <- A.takeByteString <?> "Request body"
+  return $ Request method path headers body
 
 parseRequest :: BS.ByteString -> Either String Request
 parseRequest = A.parseOnly requestParser

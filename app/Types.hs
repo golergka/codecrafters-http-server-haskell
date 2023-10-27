@@ -3,14 +3,17 @@
 module Types
   ( Path,
     Header,
+    HttpMethod (..),
     Request (..),
     Response (..),
     internalErrorResponse,
     notFoundResponse,
+    methodNotAllowedResponse,
     makeErrorResponse,
     emptyResponse,
+    createdResponse,
     makeTextResponse,
-    makeOctetStreamResponse
+    makeOctetStreamResponse,
   )
 where
 
@@ -23,8 +26,11 @@ type Path = [BS.ByteString]
 
 type Header = (BS.ByteString, BS.ByteString)
 
+data HttpMethod = GET | POST | PUT | DELETE | PATCH | HEAD | OPTIONS | TRACE | CONNECT
+  deriving (Show)
+
 data Request = Request
-  { requestMethod :: BS.ByteString,
+  { requestMethod :: HttpMethod,
     requestPath :: Path,
     requestHeaders :: [Header],
     requestBody :: BS.ByteString
@@ -44,6 +50,9 @@ internalErrorResponse = Response 500 "Internal Server Error" [] ""
 notFoundResponse :: Response
 notFoundResponse = Response 404 "Not Found" [] ""
 
+methodNotAllowedResponse :: Response
+methodNotAllowedResponse = Response 405 "Method Not Allowed" [] ""
+
 makeErrorResponse :: String -> Response
 makeErrorResponse message = Response 400 "Bad Request" headers $ BSCL.pack message
   where
@@ -53,6 +62,9 @@ makeErrorResponse message = Response 400 "Bad Request" headers $ BSCL.pack messa
 
 emptyResponse :: Response
 emptyResponse = Response 200 "OK" [] ""
+
+createdResponse :: Response
+createdResponse = Response 201 "Created" [] ""
 
 makeTextResponse :: BS.ByteString -> Response
 makeTextResponse content = Response 200 "OK" headers $ BSCL.fromStrict content
