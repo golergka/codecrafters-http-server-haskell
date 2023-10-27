@@ -28,7 +28,7 @@ handleEcho _ path = makeTextResponse $ joinAndUnpack path
     joinAndUnpack = BSC.unpack . BSC.intercalate "/"
 
 getUserAgent :: Request -> Maybe BSC.ByteString
-getUserAgent request = lookup "user-agent" (requestHeaders request)
+getUserAgent request = lookup "User-Agent" (requestHeaders request)
 
 handleUserAgent :: Request -> Path -> Response
 handleUserAgent request _ =
