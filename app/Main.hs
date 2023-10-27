@@ -40,6 +40,9 @@ sendInternalErrorResponse = sendResponse 500 "Internal Server Error" [] ""
 sendNotFoundResponse :: Socket -> IO ()
 sendNotFoundResponse = sendResponse 404 "Not Found" [] ""
 
+sendOKEmptyResponse :: Socket -> IO ()
+sendOKEmptyResponse = sendResponse 200 "OK" [] ""
+
 sendOKTextResponse :: String -> Socket -> IO ()
 sendOKTextResponse content = sendResponse 200 "OK" headers content
   where
@@ -61,6 +64,7 @@ handleResponse serverSocket (Just request) = do
     Just path -> do
       BLC.putStrLn $ "Request path: " <> path
       case splitPath path of
+        [] -> sendOKEmptyResponse serverSocket
         ["echo", input] -> sendOKTextResponse (BLC.unpack input) serverSocket
         _ -> sendNotFoundResponse serverSocket
 
