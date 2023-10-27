@@ -51,9 +51,9 @@ makeErrorResponse message = Response 400 "Bad Request" headers $ BSC.pack messag
 emptyResponse :: Response
 emptyResponse = Response 200 "OK" [] ""
 
-makeTextResponse :: String -> Response
-makeTextResponse content = Response 200 "OK" headers $ BSC.pack content
+makeTextResponse :: BS.ByteString -> Response
+makeTextResponse content = Response 200 "OK" headers content
   where
     contentTypeHeader = ("Content-Type", "text/plain")
-    contentLengthHeader = ("Content-Length", BSC.pack $ show $ length content)
+    contentLengthHeader = ("Content-Length", BSC.pack $ show $ BS.length content)
     headers = [contentTypeHeader, contentLengthHeader]
