@@ -4,6 +4,7 @@ module Main (main) where
 
 import CLIOptions
 import qualified Data.ByteString.Char8 as BSC
+import qualified Data.ByteString.Lazy as BSL
 import Debug.Trace
 import Formatter (formatResponse)
 import Network.Simple.TCP
@@ -51,9 +52,9 @@ handleFile dir _ path =
           fileExist <- doesFileExist filePath
           if fileExist
             then do
-              fileContent <- BSC.readFile filePath
+              fileContent <- BSL.readFile filePath
               return $ trace ("File found: " <> filePath) $
-                makeTextResponse fileContent
+                makeOctetStreamResponse fileContent
             else
               trace ("File not found: " <> filePath) $
                 return notFoundResponse
