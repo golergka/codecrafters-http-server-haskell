@@ -40,10 +40,12 @@ handleResponse serverSocket (Just request) = do
   case getRequestPath request of
     Nothing -> do
       BLC.putStrLn "Failed to parse request path."
-      sendNotFoundResponse serverSocket
+      sendInternalErrorResponse serverSocket
     Just path -> do
       BLC.putStrLn $ "Request path: " <> path
-      sendOKResponse serverSocket
+      if path == "/"
+        then sendOKResponse serverSocket
+        else sendNotFoundResponse serverSocket
 
 main :: IO ()
 main = do
