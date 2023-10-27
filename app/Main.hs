@@ -27,6 +27,15 @@ handleEcho _ path = makeTextResponse $ joinAndUnpack path
   where
     joinAndUnpack = BSC.unpack . BSC.intercalate "/"
 
+getUserAgent :: Request -> Maybe BSC.ByteString
+getUserAgent request = lookup "user-agent" (requestHeaders request)
+
+handleUserAgent :: Request -> Path -> Response
+handleUserAgent request _ =
+  case getUserAgent request of
+    Nothing -> makeErrorResponse "No user-agent header found"
+    Just userAgent -> makeTextResponse $ BSC.unpack userAgent
+
 getResponse :: Maybe BSC.ByteString -> Response
 getResponse Nothing = internalErrorResponse
 getResponse (Just request) =
@@ -37,6 +46,7 @@ getResponse (Just request) =
       trace ("Parsed request: " <> show parsedRequest) $
         case requestPath parsedRequest of
           [] -> emptyResponse
+          ["user-agent"] -> handleUserAgent parsedRequest []
           ("echo" : inputs) | not (null inputs) -> handleEcho parsedRequest inputs
           _ -> notFoundResponse
 

@@ -4,13 +4,13 @@ module Formatter (formatResponse) where
 
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as BSC
-import Types (Header (..), Response (..))
+import Types (Header, Response (..))
 
 crlf :: BS.ByteString
 crlf = "\r\n"
 
 formatHeader :: Header -> BS.ByteString
-formatHeader (Header k v) = k <> ": " <> v <> crlf
+formatHeader (k, v) = k <> ": " <> v <> crlf
 
 formatResponse :: Response -> BS.ByteString
 formatResponse response =

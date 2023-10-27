@@ -2,13 +2,14 @@
 
 module Types
   ( Path,
-    Header (..),
+    Header,
     Request (..),
     Response (..),
     internalErrorResponse,
     notFoundResponse,
+    makeErrorResponse,
     emptyResponse,
-    makeTextResponse
+    makeTextResponse,
   )
 where
 
@@ -17,7 +18,7 @@ import qualified Data.ByteString.Char8 as BSC
 
 type Path = [BS.ByteString]
 
-data Header = Header BS.ByteString BS.ByteString deriving (Show)
+type Header = (BS.ByteString, BS.ByteString)
 
 data Request = Request
   { requestMethod :: BS.ByteString,
@@ -40,12 +41,19 @@ internalErrorResponse = Response 500 "Internal Server Error" [] ""
 notFoundResponse :: Response
 notFoundResponse = Response 404 "Not Found" [] ""
 
+makeErrorResponse :: String -> Response
+makeErrorResponse message = Response 400 "Bad Request" headers $ BSC.pack message
+  where
+    contentTypeHeader = ("Content-Type", "text/plain")
+    contentLengthHeader = ("Content-Length", BSC.pack $ show $ length message)
+    headers = [contentTypeHeader, contentLengthHeader]
+
 emptyResponse :: Response
 emptyResponse = Response 200 "OK" [] ""
 
 makeTextResponse :: String -> Response
 makeTextResponse content = Response 200 "OK" headers $ BSC.pack content
   where
-    contentTypeHeader = Header "Content-Type" "text/plain"
-    contentLengthHeader = Header "Content-Length" $ BSC.pack $ show $ length content
+    contentTypeHeader = ("Content-Type", "text/plain")
+    contentLengthHeader = ("Content-Length", BSC.pack $ show $ length content)
     headers = [contentTypeHeader, contentLengthHeader]

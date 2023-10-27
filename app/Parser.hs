@@ -7,7 +7,7 @@ import qualified Data.Attoparsec.ByteString.Char8 as AC
 import qualified Data.ByteString as BS
 import Data.Char (chr)
 import Data.Word (Word8)
-import Types (Header (..), Path, Request (..))
+import Types (Header, Path, Request (..))
 
 pathParser :: Parser Path
 pathParser = do
@@ -23,7 +23,7 @@ headerParser :: Parser Header
 headerParser = do
   key <- AC.takeTill (== ':') <* AC.char ':' <* AC.skipSpace <?> "Header key and colon"
   value <- A.takeTill AC.isEndOfLine <* AC.endOfLine <?> "Header value and end of line"
-  return $ Header key value
+  return (key, value)
 
 isSpaceWord8 :: Word8 -> Bool
 isSpaceWord8 = AC.isSpace . chr . fromIntegral
