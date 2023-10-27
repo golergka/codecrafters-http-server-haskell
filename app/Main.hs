@@ -4,9 +4,8 @@ module Main (main) where
 
 import CLIOptions
 import qualified Data.ByteString.Char8 as BSC
-import qualified Data.ByteString.Lazy as BSL
 import Debug.Trace
-import System.FilePath
+import Formatter (formatResponse)
 import Network.Simple.TCP
   ( HostPreference (Host),
     Socket,
@@ -15,8 +14,9 @@ import Network.Simple.TCP
     serve,
   )
 import Options.Applicative
-import Formatter (formatResponse)
 import Parser (parseRequest)
+import System.Directory (doesFileExist)
+import System.FilePath
 import Types
 
 byteLimit :: Int
@@ -48,8 +48,15 @@ handleFile dir _ path =
    in if ".." `elem` path
         then return $ makeErrorResponse "Invalid path"
         else do
-          fileContent <- BSL.readFile filePath
-          return $ makeOctetStreamResponse fileContent
+          fileExist <- doesFileExist filePath
+          if fileExist
+            then do
+              fileContent <- BSC.readFile filePath
+              return $ trace ("File found: " <> filePath) $
+                makeTextResponse fileContent
+            else
+              trace ("File not found: " <> filePath) $
+                return notFoundResponse
 
 getResponse :: CLIOptions -> Maybe BSC.ByteString -> IO Response
 getResponse _ Nothing = return internalErrorResponse
@@ -63,7 +70,7 @@ getResponse options (Just request) =
           [] -> return emptyResponse
           ["user-agent"] -> handleUserAgent parsedRequest []
           ("echo" : inputs) | not (null inputs) -> handleEcho parsedRequest inputs
-          ("files": inputs ) | not (null inputs) -> 
+          ("files" : inputs) | not (null inputs) ->
             case directory options of
               Nothing -> return notFoundResponse
               Just dir -> handleFile dir parsedRequest inputs
