@@ -53,23 +53,23 @@ sendOKTextResponse content = sendResponse 200 "OK" headers content
 splitPath :: BLC.ByteString -> [BLC.ByteString]
 splitPath path = filter (not . BLC.null) $ BLC.split '/' path
 
-handleResponse :: Socket -> Maybe BLC.ByteString -> IO ()
-handleResponse serverSocket Nothing = sendInternalErrorResponse serverSocket
-handleResponse serverSocket (Just request) = do
+handleResponse :: Maybe BLC.ByteString -> IO (Socket -> IO ())
+handleResponse Nothing = return sendInternalErrorResponse
+handleResponse (Just request) = do
   BLC.putStrLn $ "Received request:\n" <> request
   case getRequestPath request of
     Nothing -> do
       BLC.putStrLn "Failed to parse request path."
-      sendInternalErrorResponse serverSocket
+      return sendInternalErrorResponse
     Just path -> do
       BLC.putStrLn $ "Request path: " <> path
       case splitPath path of
-        [] -> sendOKEmptyResponse serverSocket
-        ("echo" : inputs) | not (null inputs) -> handleEcho inputs serverSocket
+        [] -> return sendOKEmptyResponse
+        ("echo" : inputs) | not (null inputs) -> return $ handleEcho inputs
           where
             joinAndUnpack = BLC.unpack . BLC.intercalate "/"
             handleEcho = sendOKTextResponse . joinAndUnpack
-        _ -> sendNotFoundResponse serverSocket
+        _ -> return sendNotFoundResponse
 
 main :: IO ()
 main = do
@@ -85,4 +85,6 @@ main = do
   serve (Host host) port $ \(serverSocket, serverAddr) -> do
     BLC.putStrLn $ "Accepted connection from " <> BLC.pack (show serverAddr) <> "."
 
-    recv serverSocket byteLimit >>= handleResponse serverSocket . fmap BLC.fromStrict
+    recv serverSocket byteLimit >>= \receivedBytes -> do
+      action <- handleResponse . fmap BLC.fromStrict $ receivedBytes
+      action serverSocket
