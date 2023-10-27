@@ -18,7 +18,10 @@ crlf = "\r\n"
 byteLimit :: Int
 byteLimit = 1024 * 10 -- 10KB
 
-sendResponse :: Int -> String -> Socket -> IO ()
+type StatusCode = Int
+type StatusMessage = String
+
+sendResponse :: StatusCode -> StatusMessage -> Socket -> IO ()
 sendResponse code message serverSocket = do
   let status = "HTTP/1.1 " <> BLC.pack (show code) <> " " <> BLC.pack message <> crlf
   let headers = status <> crlf
