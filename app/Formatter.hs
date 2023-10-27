@@ -2,26 +2,29 @@
 
 module Formatter (formatResponse) where
 
-import qualified Data.ByteString as BS
-import qualified Data.ByteString.Char8 as BSC
+import qualified Data.ByteString.Lazy as BSL
+import qualified Data.ByteString.Lazy.Char8 as BSCL
 import Types (Header, Response (..))
 
-crlf :: BS.ByteString
+crlf :: BSL.ByteString
 crlf = "\r\n"
 
-formatHeader :: Header -> BS.ByteString
-formatHeader (k, v) = k <> ": " <> v <> crlf
+formatHeader :: Header -> BSL.ByteString
+formatHeader (k, v) = key <> ": " <> value <> crlf
+  where
+    key = BSL.fromStrict k
+    value = BSL.fromStrict v
 
-formatResponse :: Response -> BS.ByteString
+formatResponse :: Response -> BSL.ByteString
 formatResponse response =
-  BS.concat
+  BSL.concat
     [ statusLine,
       headerLines,
       crlf,
       responseBody response
     ]
   where
-    statusMessage = responseStatusMessage response
-    statusCode = BSC.pack $ show $ responseStatusCode response
+    statusMessage = BSL.fromStrict $ responseStatusMessage response
+    statusCode = BSCL.pack $ show $ responseStatusCode response
     statusLine = "HTTP/1.1 " <> statusCode <> " " <> statusMessage <> crlf
-    headerLines = BS.concat $ map formatHeader $ responseHeaders response
+    headerLines = BSL.concat $ map formatHeader $ responseHeaders response

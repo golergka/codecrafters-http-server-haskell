@@ -4,7 +4,7 @@ module Main (main) where
 
 import CLIOptions
 import qualified Data.ByteString.Char8 as BSC
-import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as BSL
 import Debug.Trace
 import System.FilePath
 import Network.Simple.TCP
@@ -24,7 +24,7 @@ byteLimit = 1024 * 10 -- 10KB
 
 sendResponse :: Response -> Socket -> IO ()
 sendResponse response serverSocket =
-  sendLazy serverSocket $ BSC.fromStrict $ formatResponse response
+  sendLazy serverSocket $ formatResponse response
 
 type EndpointHandler = Request -> Path -> IO Response
 
@@ -48,8 +48,8 @@ handleFile dir _ path =
    in if ".." `elem` path
         then return $ makeErrorResponse "Invalid path"
         else do
-          fileContent <- BS.readFile filePath
-          return $ makeTextResponse fileContent
+          fileContent <- BSL.readFile filePath
+          return $ makeOctetStreamResponse fileContent
 
 getResponse :: CLIOptions -> Maybe BSC.ByteString -> IO Response
 getResponse _ Nothing = return internalErrorResponse
