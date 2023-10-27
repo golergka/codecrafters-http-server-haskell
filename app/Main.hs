@@ -65,7 +65,10 @@ handleResponse serverSocket (Just request) = do
       BLC.putStrLn $ "Request path: " <> path
       case splitPath path of
         [] -> sendOKEmptyResponse serverSocket
-        ["echo", input] -> sendOKTextResponse (BLC.unpack input) serverSocket
+        ("echo" : inputs) | not (null inputs) -> handleEcho inputs serverSocket
+          where
+            joinAndUnpack = BLC.unpack . BLC.intercalate "/"
+            handleEcho = sendOKTextResponse . joinAndUnpack
         _ -> sendNotFoundResponse serverSocket
 
 main :: IO ()
