@@ -19,22 +19,36 @@ byteLimit :: Int
 byteLimit = 1024 * 10 -- 10KB
 
 type StatusCode = Int
+
 type StatusMessage = String
 
-sendResponse :: StatusCode -> StatusMessage -> Socket -> IO ()
-sendResponse code message serverSocket = do
-  let status = "HTTP/1.1 " <> BLC.pack (show code) <> " " <> BLC.pack message <> crlf
-  let headers = status <> crlf
-  sendLazy serverSocket headers
+data Header = Header String String deriving (Show)
+
+type Body = String
+
+sendResponse :: StatusCode -> StatusMessage -> [Header] -> Body -> Socket -> IO ()
+sendResponse code message headers body serverSocket =
+  sendLazy serverSocket response
+  where
+    statusLine = "HTTP/1.1 " <> BLC.pack (show code) <> " " <> BLC.pack message <> crlf
+    headerLines = BLC.concat $ map (\(Header k v) -> BLC.pack k <> ": " <> BLC.pack v <> crlf) headers
+    response = BLC.concat [statusLine, headerLines, crlf, BLC.pack body]
 
 sendInternalErrorResponse :: Socket -> IO ()
-sendInternalErrorResponse = sendResponse 500 "Internal Server Error"
+sendInternalErrorResponse = sendResponse 500 "Internal Server Error" [] ""
 
 sendNotFoundResponse :: Socket -> IO ()
-sendNotFoundResponse = sendResponse 404 "Not Found"
+sendNotFoundResponse = sendResponse 404 "Not Found" [] ""
 
-sendOKResponse :: Socket -> IO ()
-sendOKResponse = sendResponse 200 "OK"
+sendOKTextResponse :: String -> Socket -> IO ()
+sendOKTextResponse content = sendResponse 200 "OK" headers content
+  where
+    contentTypeHeader = Header "Content-Type" "text/plain"
+    contentLengthHeader = Header "Content-Length" (show $ length content)
+    headers = [contentTypeHeader, contentLengthHeader]
+
+splitPath :: BLC.ByteString -> [BLC.ByteString]
+splitPath path = filter (not . BLC.null) $ BLC.split '/' path
 
 handleResponse :: Socket -> Maybe BLC.ByteString -> IO ()
 handleResponse serverSocket Nothing = sendInternalErrorResponse serverSocket
@@ -46,9 +60,9 @@ handleResponse serverSocket (Just request) = do
       sendInternalErrorResponse serverSocket
     Just path -> do
       BLC.putStrLn $ "Request path: " <> path
-      if path == "/"
-        then sendOKResponse serverSocket
-        else sendNotFoundResponse serverSocket
+      case splitPath path of
+        ["echo", input] -> sendOKTextResponse (BLC.unpack input) serverSocket
+        _ -> sendNotFoundResponse serverSocket
 
 main :: IO ()
 main = do
